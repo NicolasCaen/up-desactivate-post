@@ -2,7 +2,7 @@
 /*
 Plugin Name: Désactivation des Posts
 Description: Désactive les posts standards de WordPress
-Version: 1.0
+Version: 1.1
 Author: GEHIN Nicolas
 */
 
@@ -25,11 +25,30 @@ add_action('admin_bar_menu', 'desactiver_posts_admin_bar', 999);
 // Redirige les utilisateurs qui essaient d'accéder aux pages de posts
 function bloquer_acces_posts() {
     global $pagenow;
-    $array_pages = array('edit.php', 'post-new.php', 'post.php');
-    
-    if (in_array($pagenow, $array_pages) && !isset($_GET['post_type'])) {
+    // Bloque uniquement le post type par défaut "post"
+    if ($pagenow === 'edit.php' && !isset($_GET['post_type'])) {
+        // Liste des Articles (post type par défaut)
         wp_redirect(admin_url());
         exit;
+    }
+
+    if ($pagenow === 'post-new.php') {
+        // Nouvel Article si post_type manquant ou explicite "post"
+        $pt = isset($_GET['post_type']) ? sanitize_key($_GET['post_type']) : 'post';
+        if ($pt === 'post') {
+            wp_redirect(admin_url());
+            exit;
+        }
+    }
+
+    if ($pagenow === 'post.php' && isset($_GET['post'])) {
+        // Edition: vérifier le type réel du contenu ciblé
+        $post_id = (int) $_GET['post'];
+        $post_type = get_post_type($post_id);
+        if ($post_type === 'post') {
+            wp_redirect(admin_url());
+            exit;
+        }
     }
 }
 add_action('admin_init', 'bloquer_acces_posts');
